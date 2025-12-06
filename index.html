@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>测测你今天穿什么内裤</title>
+  <!-- Tailwind CSS v3 -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#93C5FD',
+            secondary: '#F5F5F5',
+            accent: '#3B82F6',
+            gallery: '#10B981' // 图鉴按钮颜色
+          },
+          fontFamily: {
+            sans: ['Arial Rounded MT Bold', 'Avenir', 'Helvetica', 'Arial', 'sans-serif'],
+          },
+          animation: {
+            'bounce-slow': 'bounce 2s infinite',
+            'wiggle': 'wiggle 1s ease-in-out infinite',
+            'pulse-slow': 'pulse 3s infinite',
+          },
+          keyframes: {
+            wiggle: {
+              '0%, 100%': { transform: 'rotate(-3deg)' },
+              '50%': { transform: 'rotate(3deg)' },
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .text-shadow {
+        text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      }
+      .text-shadow-lg {
+        text-shadow: 0 4px 8px rgba(0,0,0,0.12), 0 2px 4px rgba(0,0,0,0.08);
+      }
+      .progress-ring-circle {
+        transition: stroke-dashoffset 0.35s;
+        transform: rotate(-90deg);
+        transform-origin: 50% 50%;
+      }
+    }
+
+    body {
+      touch-action: none;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    @keyframes float {
+      0% { transform: translateY(0px); }
+      50% { transform: translateY(-10px); }
+      100% { transform: translateY(0px); }
+    }
+
+    .float-animation {
+      animation: float 3s ease-in-out infinite;
+    }
+
+    .progress-container {
+      position: relative;
+      width: 200px;
+      height: 200px;
+    }
+
+    .progress-text {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 1.5rem;
+      font-weight: bold;
+    }
+
+    .press-hint {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      pointer-events: none;
+    }
+    
+    /* 图鉴模态框样式 */
+    .gallery-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.8);
+      z-index: 1000;
+      overflow-y: auto;
+      padding: 20px;
+    }
+    
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 20px;
+      max-width: 900px;
+      margin: 40px auto;
+    }
+    
+    .gallery-item {
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      transition: transform 0.3s;
+    }
+    
+    .gallery-item:hover {
+      transform: translateY(-5px);
+    }
+    
+    .gallery-img {
+      width: 100%;
+      height: 140px;
+      object-fit: cover;
+    }
+    
+    .gallery-name {
+      padding: 10px;
+      text-align: center;
+      font-weight: bold;
+      color: #333;
+    }
+    
+    .gallery-description {
+      padding: 0 10px 10px;
+      text-align: center;
+      font-size: 12px;
+      color: #666;
+    }
+    
+    .close-gallery {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #EF4444;
+      color: white;
+      border: none;
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      font-size: 24px;
+      cursor: pointer;
+      z-index: 1001;
+    }
+  </style>
+</head>
+<body class="bg-secondary min-h-screen flex flex-col items-center justify-center p-4">
+  <!-- 图鉴模态框 (初始隐藏) -->
+  <div id="gallery-modal" class="gallery-modal">
+    <button id="close-gallery" class="close-gallery">×</button>
+    <div class="gallery-grid" id="gallery-grid">
+      <!-- 图鉴内容将通过JS动态生成 -->
+    </div>
+  </div>
+
+  <div class="container max-w-md mx-auto text-center">
+    <!-- 标题 -->
+    <h1 class="text-4xl md:text-5xl font-bold mb-6 text-primary text-shadow-lg">
+      测测你今天穿什么内裤 <span class="text-accent">🩲</span>
+    </h1>
+
+    <!-- 主内容区 -->
+    <div class="bg-white rounded-3xl shadow-lg p-6 mb-8 transform transition-all duration-300 hover:shadow-xl">
+      <!-- 测试区域 -->
+      <div id="test-area" class="mb-6">
+        <div class="progress-container mx-auto">
+          <!-- 圆形进度条 -->
+          <svg class="progress-ring" width="200" height="200">
+            <circle
+              class="text-gray-200"
+              stroke-width="10"
+              stroke="currentColor"
+              fill="transparent"
+              r="85"
+              cx="100"
+              cy="100"
+            />
+            <circle
+              id="progress-circle"
+              class="text-primary progress-ring-circle"
+              stroke-width="10"
+              stroke="currentColor"
+              fill="transparent"
+              r="85"
+              cx="100"
+              cy="100"
+              stroke-dasharray="534.07"
+              stroke-dashoffset="534.07"
+            />
+          </svg>
+
+          <!-- 长按提示 -->
+          <div id="press-hint" class="press-hint">
+            <div class="text-5xl mb-2">👇</div>
+            <p class="text-lg text-gray-600">长按这里测试</p>
+          </div>
+
+          <!-- 进度文本 -->
+          <div id="progress-text" class="progress-text hidden">
+            <span id="progress-percentage">0%</span>
+          </div>
+        </div>
+
+        <!-- 提示文字 -->
+        <p id="instruction" class="text-gray-600 mt-6">
+          长按屏幕，检测你的今日内裤运势！
+        </p>
+      </div>
+
+      <!-- 结果区域 (初始隐藏) -->
+      <div id="result-area" class="hidden">
+        <div class="bg-primary/10 rounded-2xl p-6 flex flex-col items-center justify-center h-64 mb-6">
+          <!-- 结果图片将在这里显示 -->
+          <img id="result-image" class="w-32 h-32 mb-4 object-contain float-animation" src="" alt="内裤结果图">
+          <h2 id="result-title" class="text-2xl font-bold text-gray-800 mb-2">加载中...</h2>
+          <p id="result-description" class="text-gray-600">
+            正在解析你的时尚密码...
+          </p>
+        </div>
+
+        <!-- 按钮区域 -->
+        <div class="flex flex-col sm:flex-row gap-4 justify-center mb-4">
+          <!-- 重新测试按钮 -->
+          <button id="retest-button" class="bg-accent text-white py-3 px-8 rounded-full font-medium hover:bg-blue-700 transition-colors shadow-md flex-1">
+            🔄 重新测试
+          </button>
+          
+          <!-- 内裤图鉴按钮 -->
+          <button id="gallery-button" class="bg-gallery text-white py-3 px-8 rounded-full font-medium hover:bg-emerald-700 transition-colors shadow-md flex-1">
+            📚 内裤图鉴
+          </button>
+        </div>
+
+        <p class="text-gray-500 text-sm">
+          每日运势仅供参考，以实际穿着为准哦！
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 内裤结果数据 - 对应 img1 到 img18
+    // 前10个已提供，后8个留给你自己补充
+    const underwearResults = [
+      {
+        name: "淡黄色胖次",
+        description: "可爱的淡黄色胖次",
+        imageName: "img1.jpg",
+        color: "gray"
+      },
+      {
+        name: "黑色胖次",
+        description: "可爱的黑色胖次",
+        imageName: "img2.jpg",
+        color: "yellow"
+      },
+      {
+        name: "粉丝胖次",
+        description: "可爱的粉色胖次",
+        imageName: "img3.jpg",
+        color: "pink"
+      },
+      {
+        name: "白色胖次",
+        description: "可爱的白色胖次",
+        imageName: "img4.jpg",
+        color: "blue"
+      },
+      {
+        name: "蓝白条纹胖次",
+        description: "可爱的蓝白条纹胖次",
+        imageName: "img5.jpg",
+        color: "green"
+      },
+      {
+        name: "粉白条纹胖次",
+        description: "可爱的粉白条纹胖次",
+        imageName: "img6.jpg",
+        color: "purple"
+      },
+      {
+        name: "斑点胖次",
+        description: "可爱的斑点胖次",
+        imageName: "img7.jpg",
+        color: "brown"
+      },
+      {
+        name: "女仆围裙胖次",
+        description: "可爱的女仆围裙胖次",
+        imageName: "img8.jpg",
+        color: "indigo"
+      },
+      {
+        name: "爱心镂空胖次",
+        description: "可爱又性感的爱心镂空胖次",
+        imageName: "img9.jpg",
+        color: "red"
+      },
+      {
+        name: "白色蕾丝胖次",
+        description: "性感的白色蕾丝胖次",
+        imageName: "img10.jpg",
+        color: "black"
+      },
+      {
+        name: "黑色蕾丝胖次",
+        description: "性感的黑色蕾丝胖次",
+        imageName: "img11.jpg",
+        color: "blue"
+      },
+      {
+        name: "猫猫胖次",
+        description: "可爱的猫猫胖次",
+        imageName: "img12.jpg",
+        color: "green"
+      },
+      {
+        name: "灯笼裤",
+        description: "可爱的灯笼裤",
+        imageName: "img13.jpg",
+        color: "purple"
+      },
+      {
+        name: "白色丁字裤",
+        description: "性感的白色丁字裤",
+        imageName: "img14.jpg",
+        color: "orange"
+      },
+      {
+        name: "黑色丁字裤",
+        description: "黑色丁字裤",
+        imageName: "img15.jpg",
+        color: "teal"
+      },
+      {
+        name: "白色系绳胖次",
+        description: "性感的白色系绳胖次",
+        imageName: "img16.jpg",
+        color: "pink"
+      },
+      {
+        name: "黑色系绳胖次",
+        description: "性感的黑色系绳胖次",
+        imageName: "img17.jpg",
+        color: "indigo"
+      },
+      {
+        name: "真空",
+        description: "没穿胖次？大胆又变态的尝试",
+        imageName: "img18.jpg",
+        color: "red"
+      }
+    ];
+
+    // DOM 元素
+    const testArea = document.getElementById('test-area');
+    const resultArea = document.getElementById('result-area');
+    const progressCircle = document.getElementById('progress-circle');
+    const progressText = document.getElementById('progress-text');
+    const progressPercentage = document.getElementById('progress-percentage');
+    const pressHint = document.getElementById('press-hint');
+    const instruction = document.getElementById('instruction');
+    const resultImage = document.getElementById('result-image');
+    const resultTitle = document.getElementById('result-title');
+    const resultDescription = document.getElementById('result-description');
+    const retestButton = document.getElementById('retest-button');
+    const galleryButton = document.getElementById('gallery-button');
+    const galleryModal = document.getElementById('gallery-modal');
+    const closeGallery = document.getElementById('close-gallery');
+    const galleryGrid = document.getElementById('gallery-grid');
+
+    // 进度条参数
+    const circumference = 2 * Math.PI * 85;
+    const requiredHoldTime = 3000;
+    let startTime = 0;
+    let isHolding = false;
+    let progressInterval;
+
+    // 初始化进度条
+    progressCircle.style.strokeDasharray = `${circumference} ${circumference}`;
+    progressCircle.style.strokeDashoffset = circumference;
+
+    // 长按开始事件
+    function handleHoldStart(e) {
+      e.preventDefault();
+      isHolding = true;
+      startTime = Date.now();
+
+      progressText.classList.remove('hidden');
+      pressHint.classList.add('hidden');
+      instruction.textContent = '正在感应你的衣柜...';
+
+      progressInterval = setInterval(updateProgress, 30);
+      testArea.classList.add('scale-105');
+    }
+
+    // 长按结束事件
+    function handleHoldEnd() {
+      if (!isHolding) return;
+      isHolding = false;
+      clearInterval(progressInterval);
+      resetProgress();
+      testArea.classList.remove('scale-105');
+      instruction.textContent = '长按屏幕，检测你的今日内裤运势！';
+    }
+
+    // 更新进度条
+    function updateProgress() {
+      if (!isHolding) return;
+
+      const elapsedTime = Date.now() - startTime;
+      const progress = Math.min(elapsedTime / requiredHoldTime, 1);
+      const offset = circumference - (progress * circumference);
+
+      progressCircle.style.strokeDashoffset = offset;
+      const percentage = Math.round(progress * 100);
+      progressPercentage.textContent = `${percentage}%`;
+
+      if (progress >= 1) {
+        clearInterval(progressInterval);
+        generateResult();
+      }
+    }
+
+    // 重置进度条
+    function resetProgress() {
+      clearInterval(progressInterval);
+      progressCircle.style.strokeDashoffset = circumference;
+      progressText.classList.add('hidden');
+      pressHint.classList.remove('hidden');
+      progressPercentage.textContent = '0%';
+    }
+
+    // 生成随机结果
+    function generateResult() {
+      const randomIndex = Math.floor(Math.random() * underwearResults.length);
+      const result = underwearResults[randomIndex];
+
+      // 显示结果
+      showResult(result, randomIndex);
+    }
+
+    // 显示结果
+    function showResult(result, index) {
+      testArea.classList.add('hidden');
+      resultArea.classList.remove('hidden');
+
+      // 设置结果内容，图片路径指向 img 文件夹
+      const imagePath = `img/${result.imageName}`;
+      resultImage.src = imagePath;
+      resultImage.alt = result.name;
+      resultTitle.textContent = result.name;
+      resultDescription.textContent = result.description;
+
+      // 图片加载失败处理
+      resultImage.onerror = function() {
+        console.warn(`图片加载失败: ${imagePath}`);
+        // 设置一个备用显示
+        resultImage.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 24 24"><path fill="%2393C5FD" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>';
+        resultImage.alt = '图片预览';
+      };
+
+      // 添加淡入动画
+      resultArea.style.opacity = '0';
+      resultArea.style.transform = 'translateY(20px)';
+      setTimeout(() => {
+        resultArea.style.opacity = '1';
+        resultArea.style.transform = 'translateY(0)';
+        resultArea.style.transition = 'opacity 0.5s, transform 0.5s';
+      }, 10);
+    }
+
+    // 重新测试函数
+    function handleRetest() {
+      // 隐藏结果区域，显示测试区域
+      resultArea.classList.add('hidden');
+      testArea.classList.remove('hidden');
+      // 重置进度条和提示
+      resetProgress();
+      instruction.textContent = '长按屏幕，检测你的今日内裤运势！';
+    }
+
+    // 生成图鉴内容
+    function generateGallery() {
+      galleryGrid.innerHTML = '';
+      
+      underwearResults.forEach((item, index) => {
+        const itemDiv = document.createElement('div');
+        itemDiv.className = 'gallery-item';
+        
+        const img = document.createElement('img');
+        img.className = 'gallery-img';
+        img.src = `img/${item.imageName}`;
+        img.alt = item.name;
+        img.loading = 'lazy';
+        
+        // 图片加载失败处理
+        img.onerror = function() {
+          this.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 24 24"><rect width="100" height="100" fill="%23E5E7EB"/><text x="50" y="55" font-family="Arial" font-size="14" fill="%236B7280" text-anchor="middle">' + item.name + '</text></svg>';
+        };
+        
+        const nameDiv = document.createElement('div');
+        nameDiv.className = 'gallery-name';
+        nameDiv.textContent = item.name;
+        
+        const descDiv = document.createElement('div');
+        descDiv.className = 'gallery-description';
+        descDiv.textContent = item.description;
+        
+        itemDiv.appendChild(img);
+        itemDiv.appendChild(nameDiv);
+        itemDiv.appendChild(descDiv);
+        galleryGrid.appendChild(itemDiv);
+      });
+    }
+
+    // 打开图鉴
+    function openGallery() {
+      generateGallery();
+      galleryModal.style.display = 'block';
+      document.body.style.overflow = 'hidden';
+    }
+
+    // 关闭图鉴
+    function closeGalleryModal() {
+      galleryModal.style.display = 'none';
+      document.body.style.overflow = 'auto';
+    }
+
+    // 事件监听
+    try {
+      const progressContainer = document.querySelector('.progress-container');
+      if (progressContainer) {
+        progressContainer.addEventListener('mousedown', handleHoldStart);
+        progressContainer.addEventListener('touchstart', handleHoldStart);
+      }
+      document.addEventListener('mouseup', handleHoldEnd);
+      document.addEventListener('touchend', handleHoldEnd);
+      document.addEventListener('touchcancel', handleHoldEnd);
+      
+      // 按钮事件监听
+      retestButton.addEventListener('click', handleRetest);
+      galleryButton.addEventListener('click', openGallery);
+      closeGallery.addEventListener('click', closeGalleryModal);
+      
+      // 点击模态框背景关闭
+      galleryModal.addEventListener('click', function(e) {
+        if (e.target === galleryModal) {
+          closeGalleryModal();
+        }
+      });
+      
+      // ESC键关闭图鉴
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && galleryModal.style.display === 'block') {
+          closeGalleryModal();
+        }
+      });
+    } catch (error) {
+      console.error('添加事件监听失败:', error);
+    }
+  </script>
+</body>
+</html>
